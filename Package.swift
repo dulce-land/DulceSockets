@@ -19,6 +19,6 @@ let package = Package(
         .target(
             name: "SDulceSockets", dependencies: ["CDulceSockets"]),
         .target(
-            name: "CDulceSockets", dependencies: []),
+            name: "CDulceSockets"),
     ]
 )
