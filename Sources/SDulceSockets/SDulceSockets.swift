@@ -3,31 +3,31 @@
 
 import CDulceSockets
 
-enum Address {
+public enum Address {
   case ipv4 (sockaddr_in)
   case ipv6 (sockaddr_in6)
   case ipany (sockaddr_storage)
 }
 
-enum Address_Family {
+public enum Address_Family {
   case ipv4
   case ipv6
   case ipany
 }
 
-enum Address_Type {
+public enum Address_Type {
   case none
   case udp
   case tcp
   case other
 }
 
-struct Addresses {
+public struct Addresses {
   var addr_typ  : Address_Type  = .none
   var addr_arr  : [Address]     = []
 }
 
-struct Socket_Dulce {
+public struct Socket_Dulce {
   var sock : Dulce_Socket_Descriptor = 0
   var addr : Addresses  = Addresses()
   var binded    : Bool  = false
@@ -35,20 +35,20 @@ struct Socket_Dulce {
   var listened  : Bool  = false
 }
 
-func is_Initialized (sock: Socket_Dulce) -> Bool {
+public func is_Initialized (sock: Socket_Dulce) -> Bool {
   return sock.sock > 0
 }
 
-func is_binded (sock: Socket_Dulce) -> Bool {
+public func is_binded (sock: Socket_Dulce) -> Bool {
   return sock.binded
 }
 
-func is_listened (sock: Socket_Dulce) -> Bool {
+public func is_listened (sock: Socket_Dulce) -> Bool {
   return sock.listened
 }
 
 
-func to_Number (from: Address_Family) -> Int32 {
+public func to_Number (from: Address_Family) -> Int32 {
   let mi_family  = switch from {
     case .ipany: AF_UNSPEC
     case .ipv6: AF_INET6
@@ -57,7 +57,7 @@ func to_Number (from: Address_Family) -> Int32 {
   return mi_family
 }
 
-func to_Number (from: Address_Type) -> Int32 {
+public func to_Number (from: Address_Type) -> Int32 {
   let mi_address_type  = switch from {
     case .none: Int32(-1)
     case .tcp: c_sock_stream
@@ -68,7 +68,7 @@ func to_Number (from: Address_Type) -> Int32 {
 }
 
 
-func from_Number (from: Int32) -> Address_Family? {
+public func from_Number (from: Int32) -> Address_Family? {
   let mi_family : Address_Family? = switch from {
     case AF_UNSPEC: .ipany
     case AF_INET6:  .ipv6
@@ -78,7 +78,7 @@ func from_Number (from: Int32) -> Address_Family? {
   return mi_family
 }
 
-func from_Number (from: Int32) -> Address_Type? {
+public func from_Number (from: Int32) -> Address_Type? {
   let mi_address_type : Address_Type? = switch from {
     case Int32(-1): Address_Type.none
     case c_sock_stream: .tcp
@@ -91,7 +91,7 @@ func from_Number (from: Int32) -> Address_Type? {
 }
 
 
-func create_Address (host: String, port: String, address_family: Address_Family,
+public func create_Address (host: String, port: String, address_family: Address_Family,
   address_type: Address_Type) -> Addresses?
 {
   if address_type == .none || address_type == .other {
@@ -152,7 +152,7 @@ func create_Address (host: String, port: String, address_family: Address_Family,
 }
 
 
-func create_Socket (from_address: Addresses, need_bind: Bool = false, need_listen: Bool = false,
+public func create_Socket (from_address: Addresses, need_bind: Bool = false, need_listen: Bool = false,
   listen_backlog: UInt = 10) -> Socket_Dulce? {
 
   if from_address.addr_arr.count < 1 || from_address.addr_typ == .none || from_address.addr_typ == .other {
@@ -359,11 +359,11 @@ func create_Socket (from_address: Addresses, need_bind: Bool = false, need_liste
   return nil
 }
 
-func get_Socket (sock: Socket_Dulce) -> Dulce_Socket_Descriptor {
+public func get_Socket (sock: Socket_Dulce) -> Dulce_Socket_Descriptor {
   return sock.sock
 }
 
-func wait_connection (
+public func wait_connection (
   sock: Socket_Dulce,
   response: inout Socket_Dulce?,
   data_received: inout [UInt8],
@@ -474,7 +474,7 @@ func wait_connection (
   return false
 }
 
-func string_Error() -> String {
+public func string_Error() -> String {
   var message_a = [UInt8](repeating: 0, count: 260)
   var length_a  = Int32 (message_a.count - 1)
 
@@ -484,7 +484,7 @@ func string_Error() -> String {
 
 }
 
-func dulce_Connect (
+public func dulce_Connect (
   sock: inout Socket_Dulce
 ) -> Bool {
   if !(is_Initialized(sock: sock) && sock.addr.addr_arr.count > 0){
@@ -520,7 +520,7 @@ func dulce_Connect (
   return OK
 }
 
-func port_Number (from: Address) -> UInt16 {
+public func port_Number (from: Address) -> UInt16 {
   let mi_port = switch from {
 
   case .ipv4(let mi_p):
@@ -537,11 +537,11 @@ func port_Number (from: Address) -> UInt16 {
 
 }
 
-func port_String (from: Address) -> String {
+public func port_String (from: Address) -> String {
   return String(port_Number(from: from))
 }
 
-func address_String (from: Address) -> String {
+public func address_String (from: Address) -> String {
 
   var addr = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN))
 
@@ -566,7 +566,7 @@ func address_String (from: Address) -> String {
 
 }
 
-func close (sock: inout Socket_Dulce) -> Void {
+public func close (sock: inout Socket_Dulce) -> Void {
   if !is_Initialized(sock: sock){
     return
   }
@@ -588,7 +588,7 @@ func close (sock: inout Socket_Dulce) -> Void {
   sock.addr.addr_typ = .none
 }
 
-func send (
+public func send (
   sock: Socket_Dulce,
   data_to_send: inout [UInt8],
   send_count: inout Int,
@@ -687,7 +687,7 @@ func send (
   return true
 }
 
-func receive (
+public func receive (
   sock: Socket_Dulce,
   data_received: inout [UInt8],
   received_count: inout Int,

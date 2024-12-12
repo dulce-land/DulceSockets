@@ -10,7 +10,7 @@ let package = Package(
         .library(
             name: "DulceSockets",
             type: .dynamic,
-            targets: ["SDulceSockets","CDulceSockets"]
+            targets: ["SDulceSockets", "CDulceSockets"]
             ),
     ],
     targets: [

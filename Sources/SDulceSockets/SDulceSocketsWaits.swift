@@ -1,7 +1,7 @@
 
 import CDulceSockets
 
-struct Poll_Of_Events {
+public struct Poll_Of_Events {
 
   #if os(Windows)
 
@@ -18,7 +18,7 @@ struct Poll_Of_Events {
   var last_wait_returned : Int32 = 0
 }
 
-func is_Initialized (
+public func is_Initialized (
   mi_poll: Poll_Of_Events
 ) -> Bool
 {
@@ -35,7 +35,7 @@ func is_Initialized (
   return true
 }
 
-func poll_Wait (
+public func poll_Wait (
   mi_poll: inout Poll_Of_Events,
   miliseconds_timeout: Int32) -> Bool
 {
@@ -57,7 +57,7 @@ func poll_Wait (
 }
 
 
-func set_Receive (
+public func set_Receive (
   mi_poll: inout Poll_Of_Events,
   sock: Socket_Dulce) -> Bool
 {
@@ -89,7 +89,7 @@ func set_Receive (
 }
 
 
-func set_Send (
+public func set_Send (
   mi_poll: inout Poll_Of_Events,
   sock: Socket_Dulce) -> Bool
 {
@@ -121,7 +121,7 @@ func set_Send (
 }
 
 
-func remove (
+public func remove (
   mi_poll: inout Poll_Of_Events,
   sock: Socket_Dulce) -> Bool
 {
@@ -171,7 +171,7 @@ func remove (
 }
 
 
-func is_Receive (
+public func is_Receive (
   mi_poll: Poll_Of_Events,
   sock: Socket_Dulce) -> Bool {
 
@@ -200,7 +200,7 @@ func is_Receive (
   }
 
 
-func is_Send (
+public func is_Send (
   mi_poll: Poll_Of_Events,
   sock: Socket_Dulce) -> Bool {
 
@@ -229,7 +229,7 @@ func is_Send (
 }
 
 
-func reset_Results (mi_poll: inout Poll_Of_Events) -> Void {
+public func reset_Results (mi_poll: inout Poll_Of_Events) -> Void {
 
   mi_poll.last_wait_returned = 0;
 
@@ -251,7 +251,7 @@ func reset_Results (mi_poll: inout Poll_Of_Events) -> Void {
 }
 
 
-func close (mi_poll: inout Poll_Of_Events) -> Void {
+public func close (mi_poll: inout Poll_Of_Events) -> Void {
 
   if !is_Initialized(mi_poll: mi_poll) {
     return
