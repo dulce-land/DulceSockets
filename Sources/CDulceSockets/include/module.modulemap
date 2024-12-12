@@ -1,0 +1,7 @@
+module cdulce_sockets{
+  header "Csys_dulce_linux.h"
+  header "Csys_dulce_macos.h"
+  header "Csys_dulce_windows.h"
+  header "wepoll.h"
+  export *
+}
