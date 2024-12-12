@@ -8,9 +8,9 @@ let package = Package(
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
-            name: "DulceSocketsLib",
+            name: "DulceSockets",
             type: .dynamic,
-            targets: ["CDulceSockets","DulceSockets"]
+            targets: ["CDulceSockets","SDulceSockets"]
             ),
     ],
     targets: [
@@ -19,6 +19,6 @@ let package = Package(
         .target(
             name: "CDulceSockets", dependencies: []),
         .target(
-            name: "DulceSockets", dependencies: ["CDulceSockets"]),
+            name: "SDulceSockets", dependencies: ["CDulceSockets"]),
     ]
 )
