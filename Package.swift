@@ -8,17 +8,17 @@ let package = Package(
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
-            name: "DulceSockets",
+            name: "DulceSocketsLib",
             type: .dynamic,
-            targets: ["DulceSockets", "CDulceSockets"]
+            targets: ["CDulceSockets","DulceSockets"]
             ),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "DulceSockets", dependencies: ["CDulceSockets"]),
+            name: "CDulceSockets", dependencies: []),
         .target(
-            name: "CDulceSockets"),
+            name: "DulceSockets", dependencies: ["CDulceSockets"]),
     ]
 )
