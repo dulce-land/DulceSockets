@@ -2,7 +2,7 @@
 DulceSockets
 =====================
 
-Version: "Initial" (0.0.1-dev)
+Version: "Initial" (1.0.0-dev)
 
 DulceSockets is a small, powerfull, portable and easy to use Swift network lib.
 It supports ipv4 ipv6 udp tcp raw level 2 and raw level 3,
