@@ -3,18 +3,16 @@
 
 import PackageDescription
 
-var DepCDulce : String?
-
 #if os(Linux)
-    DepCDulce = "./Sources/CDulceSockets/linux"
+   let DepCDulce = "./Sources/CDulceSockets/linux"
 #elseif os(macOS)
-    DepCDulce = "./Sources/CDulceSockets/macos"
+   let DepCDulce = "./Sources/CDulceSockets/macos"
 #elseif os(FreeBSD)
-    DepCDulce = "./Sources/CDulceSockets/freebsd"
+   let DepCDulce = "./Sources/CDulceSockets/freebsd"
 #elseif os(Windows)
-    DepCDulce = "./Sources/CDulceSockets/windows"
+   let DepCDulce = "./Sources/CDulceSockets/windows"
 #else
-    DepCDulce = "./Sources/CDulceSockets/someoneelse"
+   let DepCDulce = "./Sources/CDulceSockets/someoneelse"
 #endif
 
 let package = Package(
@@ -24,7 +22,7 @@ let package = Package(
         .library(
             name: "DulceSockets",
             type: .dynamic,
-            targets: ["DulceSockets"]
+            targets: ["DulceSockets", "CDulceSockets"]
             ),
         .library(
             name: "CDulceSockets",
@@ -39,6 +37,6 @@ let package = Package(
         .target(
             name: "DulceSockets", dependencies: ["CDulceSockets"]),
         .target(
-            name: "CDulceSockets", path: DepCDulce),
+            name: "CDulceSockets", path: "\(DepCDulce)"),
     ]
 )
