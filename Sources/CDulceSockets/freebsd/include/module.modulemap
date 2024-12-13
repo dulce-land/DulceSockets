@@ -1,0 +1,4 @@
+module CDulceSockets {
+  header "shim.h"
+  export *
+}

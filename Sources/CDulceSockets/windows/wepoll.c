@@ -1,6 +1,4 @@
 
-#ifdef _WIN32
-
 /*
  * wepoll - epoll for Windows
  * https://github.com/piscisaureus/wepoll
@@ -2254,5 +2252,3 @@ SOCKET ws_get_base_socket(SOCKET socket) {
       return_set_error(INVALID_SOCKET, error);
   }
 }
-
-#endif

@@ -1,14 +1,18 @@
 
-#ifdef _WIN32
 
-#include <winsock2.h>
-#include <ws2tcpip.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <poll.h>
+#include <unistd.h>
 
-typedef SOCKET Dulce_Socket_Descriptor;
+typedef int Dulce_Socket_Descriptor;
 
-static const Dulce_Socket_Descriptor C_Socket_Invalid = INVALID_SOCKET;
+static const Dulce_Socket_Descriptor C_Socket_Invalid = -1;
 
-static const Dulce_Socket_Descriptor C_Socket_Error = SOCKET_ERROR;
+static const Dulce_Socket_Descriptor C_Socket_Error = -1;
 
 static const int c_sock_dgram = SOCK_DGRAM;
 static const int c_sock_stream = SOCK_STREAM;
@@ -30,5 +34,3 @@ struct sockaddr c_from_ipv4_address(const struct sockaddr_in *from);
 struct sockaddr c_from_ipv6_address(const struct sockaddr_in6 *from);
 
 struct sockaddr c_from_ipany_address(const struct sockaddr_storage *from);
-
-#endif

@@ -1,0 +1,5 @@
+module CDulceSockets {
+  header "shim.h"
+  link Ws2_32.lib
+  export *
+}

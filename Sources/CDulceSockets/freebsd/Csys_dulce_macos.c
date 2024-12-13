@@ -1,7 +1,5 @@
 
-#ifdef __linux__
-
-#include "Csys_dulce_linux.h"
+#include "Csys_dulce_macos.h"
 
 // #include <stdio.h>
 // #include <stdint.h>
@@ -64,5 +62,3 @@ struct sockaddr c_from_ipany_address(const struct sockaddr_storage *from)
     struct sockaddr mi_val = *((struct sockaddr *)from);
     return mi_val;
 }
-
-#endif

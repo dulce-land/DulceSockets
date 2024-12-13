@@ -1,5 +1,3 @@
-#ifdef _WIN32
-
 
 /*
  * wepoll - epoll for Windows
@@ -114,6 +112,3 @@ WEPOLL_EXPORT int epoll_wait(HANDLE ephnd,
 #endif
 
 #endif /* WEPOLL_H_ */
-
-#endif
-
