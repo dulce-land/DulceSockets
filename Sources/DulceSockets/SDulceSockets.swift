@@ -25,6 +25,24 @@ public enum Address_Type {
 public struct Addresses {
   var addr_typ  : Address_Type  = .none
   var addr_arr  : [Address]     = []
+
+  public init() {}
+
+  public init(addr_typ: Address_Type, addr_arr: [Address]) {
+    self.addr_typ = addr_typ
+    self.addr_arr = addr_arr
+  }
+
+  public init(addr_typ: Address_Type) {
+    self.addr_typ = addr_typ
+    self.addr_arr = []
+  }
+
+  public init(addr_arr: [Address]) {
+    self.addr_typ = .none
+    self.addr_arr = addr_arr
+  }
+
 }
 
 public struct Socket_Dulce {
@@ -521,20 +539,17 @@ public func dulce_Connect (
 }
 
 public func port_Number (from: Address) -> UInt16 {
-  let mi_port = switch from {
+  switch from {
 
   case .ipv4(let mi_p):
-    mi_p.sin_port
+    return ntohs (mi_p.sin_port)
 
   case .ipv6(let mi_p):
-    mi_p.sin6_port
+    return ntohs (mi_p.sin6_port)
 
   default:
-    in_port_t(0)
+    return 0
   }
-
-  return ntohs(mi_port)
-
 }
 
 public func port_String (from: Address) -> String {
