@@ -43,6 +43,10 @@ public struct Addresses {
     self.addr_arr = addr_arr
   }
 
+  public func get_Addresses () -> [Address] {
+    self.addr_arr
+  }
+
 }
 
 public struct Socket_Dulce {
