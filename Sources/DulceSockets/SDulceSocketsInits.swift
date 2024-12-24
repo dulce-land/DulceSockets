@@ -1,7 +1,7 @@
 
 import CDulceSockets
 
-public func dulce_socket_start(){
+public func dulce_Socket_Start(){
   #if os(Windows)
     var mi_data : WSADATA
 
@@ -10,7 +10,7 @@ public func dulce_socket_start(){
 
 }
 
-public func dulce_socket_stop(){
+public func dulce_Socket_Stop(){
 
   #if os(Windows)
     WSACleanup();

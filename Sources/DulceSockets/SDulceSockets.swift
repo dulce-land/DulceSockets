@@ -57,11 +57,11 @@ public func is_Initialized (sock: Socket_Dulce) -> Bool {
   return sock.sock > 0
 }
 
-public func is_binded (sock: Socket_Dulce) -> Bool {
+public func is_Binded (sock: Socket_Dulce) -> Bool {
   return sock.binded
 }
 
-public func is_listened (sock: Socket_Dulce) -> Bool {
+public func is_Listened (sock: Socket_Dulce) -> Bool {
   return sock.listened
 }
 
@@ -381,7 +381,7 @@ public func get_Socket (sock: Socket_Dulce) -> Dulce_Socket_Descriptor {
   return sock.sock
 }
 
-public func wait_connection (
+public func wait_Connection (
   sock: Socket_Dulce,
   response: inout Socket_Dulce?,
   data_received: inout [UInt8],
@@ -391,7 +391,7 @@ public func wait_connection (
   response = nil
   data_received = []
 
-  if !(is_Initialized(sock: sock) && is_binded(sock: sock) && is_listened(sock: sock)){
+  if !(is_Initialized(sock: sock) && is_Binded(sock: sock) && is_Listened(sock: sock)){
     return false
   }
 
