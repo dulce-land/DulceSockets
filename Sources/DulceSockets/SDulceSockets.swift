@@ -44,7 +44,8 @@ public struct Addresses {
   }
 
   public func get_Addresses () -> [Address] {
-    self.addr_arr
+
+    return self.addr_arr
   }
 
 }
