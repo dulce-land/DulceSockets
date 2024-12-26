@@ -4,9 +4,9 @@
 import CDulceSockets
 
 public struct Address {
-  var ai_family : Int32 = 0
-  var ai_socktype : Int32 = 0
-  var ai_protocol : Int32 = 0
+  var ai_family : Int32 = 0   // AF_XXX
+  var ai_socktype : Int32 = 0 // sock_XXX
+  var ai_protocol : Int32 = 0 // 0 (auto) || IPPROTO_TCP || IPPROTO_UDP
   var ai_addrlen  : UInt32 = 0
   var ai_addr : sockaddr = sockaddr()
 }
@@ -406,251 +406,229 @@ public func port_String (from: Address) -> String {
   return String(port_Number(from: from))
 }
 
-// public func address_String (from: Address) -> String {
+public func address_String (from: inout Address) -> String {
 
-//   var addr = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN))
+  var addr = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN))
 
-//   switch from {
+  inet_ntop (from.ai_family, &from.ai_addr, &addr, socklen_t (addr.count))
 
-//   case .ipv4(var mi_p):
-//     inet_ntop (AF_INET, &mi_p.sin_addr, &addr, socklen_t (INET_ADDRSTRLEN))
+  let fir = addr.firstIndex(of: 0)
 
-//   case .ipv6(var mi_p):
-//     inet_ntop (AF_INET6, &mi_p.sin6_addr, &addr, socklen_t (INET6_ADDRSTRLEN))
+  if fir == nil {
 
-//   default:
-//     _ = 1
+    return String(decoding: addr , as: UTF8.self)
+  }
+  return String(decoding: addr[addr.startIndex ..< fir!] , as: UTF8.self)
 
-//   }
-//   let fir = addr.firstIndex(of: 0)
-//   if fir == nil {
+}
 
-//     return String(decoding: addr , as: UTF8.self)
-//   }
-//   return String(decoding: addr[addr.startIndex ..< fir!] , as: UTF8.self)
+public func close (sock: inout Socket_Dulce) -> Void {
+  if !is_Initialized(sock: sock){
+    return
+  }
+  #if os(Windows)
 
-// }
+    closesocket(sock.sock)
 
-// public func close (sock: inout Socket_Dulce) -> Void {
-//   if !is_Initialized(sock: sock){
-//     return
-//   }
-//   #if os(Windows)
+  #else
 
-//     closesocket(sock.sock)
+    close(sock.sock)
 
-//   #else
+  #endif
 
-//     close(sock.sock)
+  sock.sock = 0
+  sock.binded = false
+  sock.connected = false
+  sock.listened = false
+  sock.addr.addr_arr = []
+  sock.addr.addr_typ = .none
+}
 
-//   #endif
 
-//   sock.sock = 0
-//   sock.binded = false
-//   sock.connected = false
-//   sock.listened = false
-//   sock.addr.addr_arr = []
-//   sock.addr.addr_typ = .none
-// }
+public func send (
+  sock: inout Socket_Dulce,
+  data_to_send: inout [UInt8],
+  send_count: inout Int,
+  miliseconds_start_timeout: UInt32 = 0, // default is wait forever
+  miliseconds_next_timeouts: UInt32 = 0 // default is wait forever
+) -> Bool {
 
-// public func send (
-//   sock: Socket_Dulce,
-//   data_to_send: inout [UInt8],
-//   send_count: inout Int,
-//   miliseconds_start_timeout: UInt32 = 0, // default is wait forever
-//   miliseconds_next_timeouts: UInt32 = 0 // default is wait forever
-// ) -> Bool {
+  send_count = 0
 
-//   send_count = 0
+  if !(is_Initialized(sock: sock) && data_to_send.count > 0 && (sock.addr.addr_typ == .udp || sock.addr.addr_typ == .tcp)) {
+    return false
+  }
 
-//   if !(is_Initialized(sock: sock) && data_to_send.count > 0 && (sock.addr.addr_typ == .udp || sock.addr.addr_typ == .tcp)) {
-//     return false
-//   }
+  var mi_wait_poll = Poll_Of_Events ()
 
-//   var (addr, addr_len) = switch sock.addr.addr_arr.first {
+  if miliseconds_start_timeout > 0 || miliseconds_next_timeouts > 0 {
+    if !set_Send(mi_poll: &mi_wait_poll, sock: sock) {
+      return false
+    }
 
-//     case .ipv4(var mi_q):
-//       (c_from_ipv4_address(&mi_q), (MemoryLayout<sockaddr_in>).stride)
+    if miliseconds_start_timeout > 0 {
+      if !(poll_Wait(mi_poll: &mi_wait_poll, miliseconds_timeout: Int32 (miliseconds_start_timeout)) &&
+        is_Send(mi_poll: mi_wait_poll, sock: sock)){
 
-//     case .ipv6(var mi_q):
-//       (c_from_ipv6_address(&mi_q), (MemoryLayout<sockaddr_in6>).stride)
+          close(mi_poll: &mi_wait_poll)
+          return false
+      }
+    }
+  }
 
-//     default:
-//       (sockaddr(), 0)
-//   }
+  var pos = data_to_send.startIndex
+  var remaining = data_to_send.count
+  var sended_length = 0
+  var total_sended = 0
 
-//   if addr_len == 0 {
-//     return false
-//   }
+  while true {
+    if sock.addr.addr_typ == .tcp {
+      sended_length = send(sock.sock, &data_to_send[pos], remaining, 0)
 
-//   var mi_wait_poll = Poll_Of_Events ()
+    }
 
-//   if miliseconds_start_timeout > 0 || miliseconds_next_timeouts > 0 {
-//     if !set_Send(mi_poll: &mi_wait_poll, sock: sock) {
-//       return false
-//     }
+    if sock.addr.addr_typ == .udp {
+      sended_length = sendto(sock.sock, &data_to_send[pos], remaining, 0,
+        &sock.addr.addr_arr[sock.addr.addr_arr.startIndex].ai_addr,
+        sock.addr.addr_arr[sock.addr.addr_arr.startIndex].ai_addrlen)
+    }
 
-//     if miliseconds_start_timeout > 0 {
-//       if !(poll_Wait(mi_poll: &mi_wait_poll, miliseconds_timeout: Int32 (miliseconds_start_timeout)) &&
-//         is_Send(mi_poll: mi_wait_poll, sock: sock)){
+    if sended_length < 1 || sended_length == C_Socket_Error {
+      break
+    }
 
-//           close(mi_poll: &mi_wait_poll)
-//           return false
-//       }
-//     }
-//   }
+    pos += sended_length
 
-//   var pos = data_to_send.startIndex
-//   var remaining = data_to_send.count
-//   var sended_length = 0
-//   var total_sended = 0
+    total_sended += sended_length
 
-//   while true {
-//     if sock.addr.addr_typ == .tcp {
-//       sended_length = send(sock.sock, &data_to_send[pos], remaining, 0)
+    if remaining == sended_length {
+      break
+    }
 
-//     }
+    remaining -= sended_length
 
-//     if sock.addr.addr_typ == .udp {
-//       sended_length = sendto(sock.sock, &data_to_send[pos], remaining, 0, &addr, socklen_t(addr_len))
-//     }
+    if remaining < 1 {
+      break
+    }
 
-//     if sended_length < 1 || sended_length == C_Socket_Error {
-//       break
-//     }
+    if miliseconds_next_timeouts > 0 {
+      reset_Results(mi_poll: &mi_wait_poll)
 
-//     pos += sended_length
+      if !(poll_Wait(mi_poll: &mi_wait_poll, miliseconds_timeout: Int32(miliseconds_next_timeouts))
+        && is_Send(mi_poll: mi_wait_poll, sock: sock)){
+          break
+      }
+    }
 
-//     total_sended += sended_length
+  }
 
-//     if remaining == sended_length {
-//       break
-//     }
+  send_count = total_sended
 
-//     remaining -= sended_length
+  if miliseconds_start_timeout > 0 || miliseconds_next_timeouts > 0 {
+    close(mi_poll: &mi_wait_poll)
+  }
+  return true
+}
 
-//     if remaining < 1 {
-//       break
-//     }
+public func receive (
+  sock: Socket_Dulce,
+  data_received: inout [UInt8],
+  received_count: inout Int,
+  udp_received_addresses: inout Addresses?,
+  miliseconds_start_timeout: UInt32 = 0, // default is wait forever
+  miliseconds_next_timeouts: UInt32 = 0 // default is wait forever
+) -> Bool {
 
-//     if miliseconds_next_timeouts > 0 {
-//       reset_Results(mi_poll: &mi_wait_poll)
+  data_received = []
+  received_count = 0
+  udp_received_addresses = nil
 
-//       if !(poll_Wait(mi_poll: &mi_wait_poll, miliseconds_timeout: Int32(miliseconds_next_timeouts))
-//         && is_Send(mi_poll: mi_wait_poll, sock: sock)){
-//           break
-//       }
-//     }
+  if !(is_Initialized(sock: sock) && (sock.addr.addr_typ == .udp || sock.addr.addr_typ == .tcp)) {
+    return false
+  }
 
-//   }
+  var mi_wait_poll = Poll_Of_Events ()
 
-//   send_count = total_sended
+  if miliseconds_start_timeout > 0 || miliseconds_next_timeouts > 0 {
+    if !set_Receive(mi_poll: &mi_wait_poll, sock: sock) {
+      return false
+    }
 
-//   if miliseconds_start_timeout > 0 || miliseconds_next_timeouts > 0 {
-//     close(mi_poll: &mi_wait_poll)
-//   }
-//   return true
-// }
+    if miliseconds_start_timeout > 0 {
+      if !(poll_Wait(mi_poll: &mi_wait_poll, miliseconds_timeout: Int32 (miliseconds_start_timeout)) &&
+        is_Receive(mi_poll: mi_wait_poll, sock: sock)){
 
-// public func receive (
-//   sock: Socket_Dulce,
-//   data_received: inout [UInt8],
-//   received_count: inout Int,
-//   udp_received_addresses: inout Addresses?,
-//   miliseconds_start_timeout: UInt32 = 0, // default is wait forever
-//   miliseconds_next_timeouts: UInt32 = 0 // default is wait forever
-// ) -> Bool {
+          close(mi_poll: &mi_wait_poll)
+          return false
+      }
+    }
+  }
 
-//   data_received = []
-//   received_count = 0
-//   udp_received_addresses = nil
+  var final_data : [UInt8] = []
 
-//   if !(is_Initialized(sock: sock) && (sock.addr.addr_typ == .udp || sock.addr.addr_typ == .tcp)) {
-//     return false
-//   }
+  var mi_arr = [UInt8](repeating: 0, count: 65535)
 
-//   var mi_wait_poll = Poll_Of_Events ()
+  var receive_length = 0
+  var total_received = 0
 
-//   if miliseconds_start_timeout > 0 || miliseconds_next_timeouts > 0 {
-//     if !set_Receive(mi_poll: &mi_wait_poll, sock: sock) {
-//       return false
-//     }
+  var mi_udp_addresses = Addresses(addr_typ: .udp, addr_arr: [])
 
-//     if miliseconds_start_timeout > 0 {
-//       if !(poll_Wait(mi_poll: &mi_wait_poll, miliseconds_timeout: Int32 (miliseconds_start_timeout)) &&
-//         is_Receive(mi_poll: mi_wait_poll, sock: sock)){
+  var mi_address = sock.addr.addr_arr[sock.addr.addr_arr.startIndex]
+  mi_address.ai_addr = sockaddr()
 
-//           close(mi_poll: &mi_wait_poll)
-//           return false
-//       }
-//     }
-//   }
+  var mi_udp_sockaddr = sockaddr ()
+  var mi_udp_sockaddr_len = socklen_t (MemoryLayout<sockaddr>.stride)
 
-//   var final_data : [UInt8] = []
+  while true {
+    if sock.addr.addr_typ == .tcp {
+      receive_length = recv(sock.sock, &mi_arr[mi_arr.startIndex], mi_arr.count, 0)
 
-//   var mi_arr = [UInt8](repeating: 0, count: 65535)
+    }
 
-//   var receive_length = 0
-//   var total_received = 0
+    if sock.addr.addr_typ == .udp {
 
-//   var mi_udp_addresses = Addresses(addr_typ: .udp, addr_arr: [])
-//   var mi_udp_sockaddr = sockaddr ()
-//   var mi_udp_sockaddr_len = socklen_t (MemoryLayout<sockaddr>.stride)
+      receive_length = recvfrom(sock.sock, &mi_arr[mi_arr.startIndex], mi_arr.count, 0,
+       &mi_udp_sockaddr, &mi_udp_sockaddr_len)
 
-//   while true {
-//     if sock.addr.addr_typ == .tcp {
-//       receive_length = recv(sock.sock, &mi_arr[mi_arr.startIndex], mi_arr.count, 0)
+      mi_address.ai_addr = mi_udp_sockaddr
+      mi_address.ai_addrlen = mi_udp_sockaddr_len
 
-//     }
+      mi_udp_sockaddr = sockaddr()
+      mi_udp_sockaddr_len = socklen_t (MemoryLayout<sockaddr>.stride)
 
-//     if sock.addr.addr_typ == .udp {
+      mi_udp_addresses.addr_arr.append(mi_address)
 
-//       receive_length = recvfrom(sock.sock, &mi_arr[mi_arr.startIndex], mi_arr.count, 0,
-//        &mi_udp_sockaddr, &mi_udp_sockaddr_len)
+    }
 
-//       let mi_family: Address_Family? = from_Number(from: Int32 (mi_udp_sockaddr.sa_family))
+    if receive_length < 1 || receive_length == C_Socket_Error {
+      break
+    }
 
-//       if mi_family == .ipv4{
-//         let mi_q = c_to_ipv4_address(&mi_udp_sockaddr)
-//         mi_udp_addresses.addr_arr.append(.ipv4(mi_q))
+    total_received += receive_length
 
-//       }
-//       if mi_family == .ipv6{
-//         let mi_q = c_to_ipv6_address(&mi_udp_sockaddr)
-//         mi_udp_addresses.addr_arr.append(.ipv6(mi_q))
-//       }
-//       mi_udp_sockaddr_len = socklen_t (MemoryLayout<sockaddr>.stride)
-//     }
+    final_data.append(contentsOf: mi_arr[mi_arr.startIndex ..< mi_arr.startIndex + receive_length])
 
-//     if receive_length < 1 || receive_length == C_Socket_Error {
-//       break
-//     }
+    if miliseconds_next_timeouts > 0 {
+      reset_Results(mi_poll: &mi_wait_poll)
 
-//     total_received += receive_length
+      if !(poll_Wait(mi_poll: &mi_wait_poll, miliseconds_timeout: Int32(miliseconds_next_timeouts))
+        && is_Receive(mi_poll: mi_wait_poll, sock: sock)){
+          break
+      }
+    }
+  }
 
-//     final_data.append(contentsOf: mi_arr[mi_arr.startIndex ..< mi_arr.startIndex + receive_length])
+  data_received = final_data
+  received_count = total_received
 
-//     if miliseconds_next_timeouts > 0 {
-//       reset_Results(mi_poll: &mi_wait_poll)
+  if sock.addr.addr_typ == .udp {
+    udp_received_addresses = mi_udp_addresses
+  }
 
-//       if !(poll_Wait(mi_poll: &mi_wait_poll, miliseconds_timeout: Int32(miliseconds_next_timeouts))
-//         && is_Receive(mi_poll: mi_wait_poll, sock: sock)){
-//           break
-//       }
-//     }
-//   }
-
-//   data_received = final_data
-//   received_count = total_received
-
-//   if sock.addr.addr_typ == .udp {
-//     udp_received_addresses = mi_udp_addresses
-//   }
-
-//   if miliseconds_start_timeout > 0 || miliseconds_next_timeouts > 0 {
-//     close(mi_poll: &mi_wait_poll)
-//   }
-//   return true
-// }
+  if miliseconds_start_timeout > 0 || miliseconds_next_timeouts > 0 {
+    close(mi_poll: &mi_wait_poll)
+  }
+  return true
+}
 
 
