@@ -8,7 +8,7 @@ public struct Address {
   var ai_socktype : Int32 = 0 // sock_XXX
   var ai_protocol : Int32 = 0 // 0 (auto) || IPPROTO_TCP || IPPROTO_UDP
   var ai_addrlen  : UInt32 = 0
-  var ai_addr : sockaddr
+  var ai_addr : sockaddr = sockaddr(sa_family: 0, sa_data: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 }
 
 public enum Address_Family {
