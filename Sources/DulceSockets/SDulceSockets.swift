@@ -416,10 +416,6 @@ public func address_String (from: Address) -> [UInt8] {
 
   let addr_family : Address_Family? = from_Number(from: from.ai_family)
 
-  defer {
-    mi_raw_addr.deallocate()
-  }
-
   if addr_family == .ipv4 {
     let mi_addr_sockaddr_in = mi_raw_addr.load(as: sockaddr_in.self)
     var mi_sinaddr = mi_addr_sockaddr_in.sin_addr
@@ -437,6 +433,8 @@ public func address_String (from: Address) -> [UInt8] {
       return [0]
     }
   }
+
+  mi_raw_addr.deallocate()
 
   return mi_buffer_array
 }
