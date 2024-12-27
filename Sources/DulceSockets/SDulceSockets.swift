@@ -409,10 +409,6 @@ public func address_String (from: Address) -> String? {
 
   var mi_buffer_array: [UInt8] = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN) + 1)
 
-  print (mi_buffer_array)
-
-  return "H"
-
   let mi_raw_addr = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<sockaddr>.stride,
     alignment: MemoryLayout<sockaddr>.alignment)
 
@@ -441,6 +437,10 @@ public func address_String (from: Address) -> String? {
       return nil
     }
   }
+
+  print (mi_buffer_array)
+
+  return "H"
 
   return String (decoding: mi_buffer_array, as: UTF8.self)
 }
