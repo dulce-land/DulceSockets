@@ -409,8 +409,10 @@ public func address_String (from: Address) -> [UInt8] {
 
   var mi_buffer_array: [UInt8] = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN) + 1)
 
-  var mi_addr_tmp : Any? = nil
-  var mi_family_tmp : Any? = nil
+  var mi_addr6_tmp : in6_addr = in6_addr()
+  var mi_addr4_tmp : in_addr  = in_addr()
+
+  var mi_family_tmp : UInt16 = 0
 
   let addr_family : Address_Family? = from_Number(from: from.ai_family)
 
@@ -429,13 +431,21 @@ public func address_String (from: Address) -> [UInt8] {
 
   if addr_family == .ipv4 {
     let miipv4 = mi_raw_addr.load(as: sockaddr_in.self)
-    mi_addr_tmp = miipv4.sin_addr
+    mi_addr4_tmp = miipv4.sin_addr
     mi_family_tmp = miipv4.sin_family
+
   } else if addr_family == .ipv6 {
     let miipv6 = mi_raw_addr.load(as: sockaddr_in6.self)
-    mi_addr_tmp = miipv6.sin6_addr
+    mi_addr6_tmp = miipv6.sin6_addr
     mi_family_tmp = miipv6.sin6_family
   }
+
+  if addr_family == .ipv4 {
+    _ = inet_ntop(Int32 (mi_family_tmp), &mi_addr4_tmp, &mi_buffer_array, socklen_t (mi_buffer_array.count))
+  } else if addr_family == .ipv6 {
+    _ = inet_ntop(Int32 (mi_family_tmp), &mi_addr6_tmp, &mi_buffer_array, socklen_t (mi_buffer_array.count))
+  }
+
 
   return mi_buffer_array
 }
