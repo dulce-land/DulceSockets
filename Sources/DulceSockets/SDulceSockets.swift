@@ -381,13 +381,13 @@ public func port_Number (from: Address) -> UInt16 {
   var mi_port : UInt16 = 0
 
   if addr_family == .ipv4 {
-    mi_port =  withUnsafeBytes(of: from.ai_addr){ miptr in
+    mi_port =  withUnsafeBytes<sockaddr>(of: from.ai_addr){ miptr -> UInt16 in
       (miptr.load(as: sockaddr_in.self)).sin_port
     }
   }
 
   if addr_family == .ipv6 {
-    mi_port = withUnsafeBytes(of: from.ai_addr){ miptr in
+    mi_port = withUnsafeBytes<sockaddr>(of: from.ai_addr){ miptr -> UInt16 in
       (miptr.load(as: sockaddr_in6.self)).sin6_port
     }
   }
