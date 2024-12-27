@@ -421,9 +421,6 @@ public func address_String (from: Address) -> [UInt8] {
 
   mi_raw_addr.storeBytes(of: from.ai_addr, as: sockaddr.self)
 
-  defer {
-    mi_raw_addr.deallocate()
-  }
 
   if addr_family == nil {
     return [0]
