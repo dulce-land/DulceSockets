@@ -405,19 +405,21 @@ public func port_String (from: Address) -> String {
   return String(port_Number(from: from))
 }
 
-public func address_String (from: inout Address) -> String {
+public func address_String (from: Address) -> String {
+
+  var mi_sockaddr = from.ai_addr
 
   var addr = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN) + 1)
 
-  inet_ntop (from.ai_family, &from.ai_addr, &addr, socklen_t (addr.count))
+  inet_ntop (Int32 (mi_sockaddr.sa_family), &mi_sockaddr, &addr, socklen_t (addr.count))
 
-  let fir = addr.firstIndex(of: 0)
+  // let fir = addr.firstIndex(of: 0)
 
-  if fir == nil {
+  // if fir == nil {
 
     return String(decoding: addr , as: UTF8.self)
-  }
-  return String(decoding: addr[addr.startIndex ..< fir!] , as: UTF8.self)
+  // }
+  // return String(decoding: addr[addr.startIndex ..< fir!] , as: UTF8.self)
 
 }
 
