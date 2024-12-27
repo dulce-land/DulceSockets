@@ -411,9 +411,10 @@ public func address_String (from: Address) -> String {
 
   var addr = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN) + 1)
 
-  inet_ntop (Int32 (mi_sockaddr.sa_family), &mi_sockaddr, &addr, socklen_t (addr.count))
+  inet_ntop (Int32 (mi_sockaddr.sa_family), &mi_sockaddr, &addr, socklen_t (INET6_ADDRSTRLEN))
 
-  let str = String(decoding: addr, as: UTF8.self)
+  // let str = String(decoding: addr, as: UTF8.self)
+  let str = addr.description
 
   return str
 }
