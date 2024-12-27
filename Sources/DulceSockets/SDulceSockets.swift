@@ -394,8 +394,8 @@ public func port_Number (from: Address) -> UInt16 {
   }
 
   if addr_family == .ipv6 {
-    let mi_addr_sockaddr_in = mi_raw_addr.load(as: sockaddr_in6.self)
-    mi_port = ntohs(mi_addr_sockaddr_in.sin6_port)
+    let mi_addr_sockaddr_in6 = mi_raw_addr.load(as: sockaddr_in6.self)
+    mi_port = ntohs(mi_addr_sockaddr_in6.sin6_port)
   }
 
   return mi_port
@@ -405,18 +405,38 @@ public func port_String (from: Address) -> String {
   return String(port_Number(from: from))
 }
 
-public func address_String (from: Address) -> String {
+public func address_String (from: Address) -> String? {
 
-  var mi_sockaddr = from.ai_addr
+  var mi_addr: [UInt8] = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN) + 1)
 
-  var addr = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN) + 1)
+  let mi_raw_addr = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<sockaddr>.stride,
+    alignment: MemoryLayout<sockaddr>.alignment)
 
-  inet_ntop (Int32 (mi_sockaddr.sa_family), &mi_sockaddr, &addr, socklen_t (INET6_ADDRSTRLEN))
+  mi_raw_addr.storeBytes(of: from.ai_addr, as: sockaddr.self)
 
-  // let str = String(decoding: addr, as: UTF8.self)
-  let str = addr.description
+  let addr_family : Address_Family? = from_Number(from: from.ai_family)
 
-  return str
+  defer {
+    mi_raw_addr.deallocate()
+  }
+
+  if addr_family == .ipv4 {
+    var mi_addr_sockaddr_in = mi_raw_addr.load(as: sockaddr_in.self)
+
+    if inet_ntop (AF_INET, &mi_addr_sockaddr_in.sin_addr, &mi_addr, socklen_t (mi_addr.count)) == nil {
+      return nil
+    }
+  }
+
+  if addr_family == .ipv6 {
+    var mi_addr_sockaddr_in6 = mi_raw_addr.load(as: sockaddr_in6.self)
+
+    if inet_ntop (AF_INET6, &mi_addr_sockaddr_in6.sin6_addr, &mi_addr, socklen_t (mi_addr.count)) == nil {
+      return nil
+    }
+  }
+
+  return String (decoding: mi_addr, as: UTF8.self)
 }
 
 public func close (sock: inout Socket_Dulce) -> Void {
