@@ -431,6 +431,10 @@ public func address_String (from: Address) -> [UInt8] {
     let miipv4 = mi_raw_addr.load(as: sockaddr_in.self)
     mi_addr_tmp = miipv4.sin_addr
     mi_family_tmp = miipv4.sin_family
+  } else if addr_family == .ipv6 {
+    let miipv6 = mi_raw_addr.load(as: sockaddr_in6.self)
+    mi_addr_tmp = miipv6.sin6_addr
+    mi_family_tmp = miipv6.sin6_family
   }
 
   return mi_buffer_array
