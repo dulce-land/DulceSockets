@@ -407,7 +407,11 @@ public func port_String (from: Address) -> String {
 
 public func address_String (from: Address) -> String? {
 
-  var mi_addr: [UInt8] = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN) + 1)
+  var mi_buffer_array: [UInt8] = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN) + 1)
+
+  print (mi_buffer_array)
+
+  return "H"
 
   let mi_raw_addr = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<sockaddr>.stride,
     alignment: MemoryLayout<sockaddr>.alignment)
@@ -421,22 +425,24 @@ public func address_String (from: Address) -> String? {
   }
 
   if addr_family == .ipv4 {
-    var mi_addr_sockaddr_in = mi_raw_addr.load(as: sockaddr_in.self)
+    let mi_addr_sockaddr_in = mi_raw_addr.load(as: sockaddr_in.self)
+    var mi_sinaddr = mi_addr_sockaddr_in.sin_addr
 
-    if inet_ntop (AF_INET, &mi_addr_sockaddr_in.sin_addr, &mi_addr, socklen_t (mi_addr.count)) == nil {
+    if inet_ntop (AF_INET, &mi_sinaddr, &mi_buffer_array, socklen_t (INET_ADDRSTRLEN)) == nil {
       return nil
     }
   }
 
   if addr_family == .ipv6 {
-    var mi_addr_sockaddr_in6 = mi_raw_addr.load(as: sockaddr_in6.self)
+    let mi_addr_sockaddr_in6 = mi_raw_addr.load(as: sockaddr_in6.self)
+    var mi_sinaddr6 = mi_addr_sockaddr_in6.sin6_addr
 
-    if inet_ntop (AF_INET6, &mi_addr_sockaddr_in6.sin6_addr, &mi_addr, socklen_t (mi_addr.count)) == nil {
+    if inet_ntop (AF_INET6, &mi_sinaddr6, &mi_buffer_array, socklen_t (INET6_ADDRSTRLEN)) == nil {
       return nil
     }
   }
 
-  return String (decoding: mi_addr, as: UTF8.self)
+  return String (decoding: mi_buffer_array, as: UTF8.self)
 }
 
 public func close (sock: inout Socket_Dulce) -> Void {
