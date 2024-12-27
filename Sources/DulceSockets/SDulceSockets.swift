@@ -405,7 +405,7 @@ public func port_String (from: Address) -> String {
   return String(port_Number(from: from))
 }
 
-public func address_String (from: Address) -> String? {
+public func address_String (from: Address) -> [UInt8] {
 
   var mi_buffer_array: [UInt8] = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN) + 1)
 
@@ -425,7 +425,7 @@ public func address_String (from: Address) -> String? {
     var mi_sinaddr = mi_addr_sockaddr_in.sin_addr
 
     if inet_ntop (AF_INET, &mi_sinaddr, &mi_buffer_array, socklen_t (INET_ADDRSTRLEN)) == nil {
-      return nil
+      return [0]
     }
   }
 
@@ -434,15 +434,11 @@ public func address_String (from: Address) -> String? {
     var mi_sinaddr6 = mi_addr_sockaddr_in6.sin6_addr
 
     if inet_ntop (AF_INET6, &mi_sinaddr6, &mi_buffer_array, socklen_t (INET6_ADDRSTRLEN)) == nil {
-      return nil
+      return [0]
     }
   }
 
-  print (mi_buffer_array)
-
-  return "H"
-
-  return String (decoding: mi_buffer_array, as: UTF8.self)
+  return mi_buffer_array
 }
 
 public func close (sock: inout Socket_Dulce) -> Void {
