@@ -8,7 +8,7 @@ public struct Address {
   var ai_socktype : Int32 = 0 // sock_XXX
   var ai_protocol : Int32 = 0 // 0 (auto) || IPPROTO_TCP || IPPROTO_UDP
   var ai_addrlen  : UInt32 = 0
-  var ai_addr : sockaddr = sockaddr()
+  var ai_addr : sockaddr
 }
 
 public enum Address_Family {
@@ -405,42 +405,19 @@ public func port_String (from: Address) -> String {
   return String(port_Number(from: from))
 }
 
-public func address_String (from: Address) -> [UInt8] {
+public func address_String (from: Address) -> [CChar] {
 
-  var mi_buffer_array: [UInt8] = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN) + 1)
+  var mi_buffer_array  = [CChar](repeating: 0, count: Int (INET6_ADDRSTRLEN) + 1)
 
-  var mi_addr6_tmp : in6_addr = in6_addr()
-  var mi_addr4_tmp : in_addr  = in_addr()
-
-  var mi_family_tmp : UInt16 = 0
+  var misoa = from.ai_addr;
 
   let addr_family : Address_Family? = from_Number(from: from.ai_family)
 
-  let mi_raw_addr = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<sockaddr>.stride,
-    alignment: MemoryLayout<sockaddr>.alignment)
-
-  mi_raw_addr.storeBytes(of: from.ai_addr, as: sockaddr.self)
+  print(MemoryLayout<sockaddr>.stride, " ", MemoryLayout<sockaddr>.alignment)
 
 
   if addr_family == nil {
     return [0]
-  }
-
-  if addr_family == .ipv4 {
-    let miipv4 = mi_raw_addr.load(as: sockaddr_in.self)
-    mi_addr4_tmp = miipv4.sin_addr
-    mi_family_tmp = miipv4.sin_family
-
-  } else if addr_family == .ipv6 {
-    let miipv6 = mi_raw_addr.load(as: sockaddr_in6.self)
-    mi_addr6_tmp = miipv6.sin6_addr
-    mi_family_tmp = miipv6.sin6_family
-  }
-
-  if addr_family == .ipv4 {
-    _ = inet_ntop(Int32 (mi_family_tmp), &mi_addr4_tmp, &mi_buffer_array, socklen_t (mi_buffer_array.count))
-  } else if addr_family == .ipv6 {
-    _ = inet_ntop(Int32 (mi_family_tmp), &mi_addr6_tmp, &mi_buffer_array, socklen_t (mi_buffer_array.count))
   }
 
 
