@@ -25,8 +25,8 @@ public enum Address_Type {
 }
 
 public struct Addresses {
-  var addr_typ  : Address_Type  = .none
-  var addr_arr  : [Address]     = []
+  public internal(set) var addr_typ  : Address_Type  = .none
+  public internal(set) var addr_arr  : [Address]     = []
 
   public init() {}
 
@@ -43,11 +43,6 @@ public struct Addresses {
   public init(addr_arr: [Address]) {
     self.addr_typ = .none
     self.addr_arr = addr_arr
-  }
-
-  public func get_Addresses () -> [Address] {
-
-    return self.addr_arr
   }
 
 }
