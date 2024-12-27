@@ -378,23 +378,21 @@ public func port_Number (from: Address) -> UInt16 {
 
   let addr_family : Address_Family? = from_Number(from: from.ai_family)
 
-  if addr_family == nil {
-    return 0
-  }
+  var mi_port : UInt16 = 0
 
   if addr_family == .ipv4 {
-    return withUnsafeBytes(of: from.ai_addr){ miptr in
-      ntohs(miptr.load(as: sockaddr_in.self).sin_port)
+    mi_port =  withUnsafeBytes(of: from.ai_addr){ miptr in
+      (miptr.load(as: sockaddr_in.self)).sin_port
     }
   }
 
   if addr_family == .ipv6 {
-    return withUnsafeBytes(of: from.ai_addr){ miptr in
-      ntohs(miptr.load(as: sockaddr_in6.self).sin6_port)
+    mi_port = withUnsafeBytes(of: from.ai_addr){ miptr in
+      (miptr.load(as: sockaddr_in6.self)).sin6_port
     }
   }
 
-  return 0
+  return (mi_port == 0 ? 0 : ntohs(mi_port) )
 }
 
 public func port_String (from: Address) -> String {
@@ -403,7 +401,7 @@ public func port_String (from: Address) -> String {
 
 public func address_String (from: inout Address) -> String {
 
-  var addr = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN))
+  var addr = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN) + 1)
 
   inet_ntop (from.ai_family, &from.ai_addr, &addr, socklen_t (addr.count))
 
