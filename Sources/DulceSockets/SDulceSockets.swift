@@ -110,7 +110,6 @@ public func from_Number (from: Int32) -> Address_Type? {
   return mi_address_type
 }
 
-
 public func create_Address (host: String, port: String, address_family: Address_Family,
   address_type: Address_Type) -> Addresses?
 {
@@ -380,19 +379,26 @@ public func port_Number (from: Address) -> UInt16 {
 
   var mi_port : UInt16 = 0
 
+  let mi_raw_addr = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<sockaddr>.stride,
+    alignment: MemoryLayout<sockaddr>.alignment)
+
+  mi_raw_addr.storeBytes(of: from.ai_addr, as: sockaddr.self)
+
+  defer {
+    mi_raw_addr.deallocate()
+  }
+
   if addr_family == .ipv4 {
-    mi_port =  withUnsafeBytes<sockaddr>(of: from.ai_addr){ miptr -> UInt16 in
-      (miptr.load(as: sockaddr_in.self)).sin_port
-    }
+    let mi_addr_sockaddr_in = mi_raw_addr.load(as: sockaddr_in.self)
+    mi_port = ntohs(mi_addr_sockaddr_in.sin_port)
   }
 
   if addr_family == .ipv6 {
-    mi_port = withUnsafeBytes<sockaddr>(of: from.ai_addr){ miptr -> UInt16 in
-      (miptr.load(as: sockaddr_in6.self)).sin6_port
-    }
+    let mi_addr_sockaddr_in = mi_raw_addr.load(as: sockaddr_in6.self)
+    mi_port = ntohs(mi_addr_sockaddr_in.sin6_port)
   }
 
-  return (mi_port == 0 ? 0 : ntohs(mi_port) )
+  return mi_port
 }
 
 public func port_String (from: Address) -> String {
