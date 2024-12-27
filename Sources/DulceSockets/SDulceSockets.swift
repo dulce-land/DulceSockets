@@ -409,35 +409,63 @@ public func address_String (from: Address) -> [UInt8] {
 
   var mi_buffer_array: [UInt8] = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN) + 1)
 
+  var mi_sockin : sockaddr_in?  = nil
+  var mi_sockin6 : sockaddr_in6? = nil
+
+  let addr_family : Address_Family? = from_Number(from: from.ai_family)
+
   let mi_raw_addr = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<sockaddr>.stride,
     alignment: MemoryLayout<sockaddr>.alignment)
 
   mi_raw_addr.storeBytes(of: from.ai_addr, as: sockaddr.self)
 
-  let addr_family : Address_Family? = from_Number(from: from.ai_family)
-
-  if addr_family == .ipv4 {
-    let mi_addr_sockaddr_in = mi_raw_addr.load(as: sockaddr_in.self)
-    var mi_sinaddr = mi_addr_sockaddr_in.sin_addr
-
-    if inet_ntop (AF_INET, &mi_sinaddr, &mi_buffer_array, socklen_t (INET_ADDRSTRLEN)) == nil {
-      return [0]
-    }
+  defer {
+    mi_raw_addr.deallocate()
   }
 
-  if addr_family == .ipv6 {
-    let mi_addr_sockaddr_in6 = mi_raw_addr.load(as: sockaddr_in6.self)
-    var mi_sinaddr6 = mi_addr_sockaddr_in6.sin6_addr
 
-    if inet_ntop (AF_INET6, &mi_sinaddr6, &mi_buffer_array, socklen_t (INET6_ADDRSTRLEN)) == nil {
-      return [0]
-    }
+  if addr_family == nil {
+    return [0]
   }
-
-  mi_raw_addr.deallocate()
 
   return mi_buffer_array
 }
+
+//   var mi_buffer_array: [UInt8] = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN))
+
+//   var mi_typ = from.ai_addr
+
+//   var mi_raw_addr = UnsafeRawPointer.initializeMemory(as: sockaddr.self, from: &mi_typ, count: 1)
+
+//   // = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<sockaddr>.stride,
+//   //   alignment: MemoryLayout<sockaddr>.alignment)
+
+//   mi_raw_addr.storeBytes(of: from.ai_addr, as: sockaddr.self)
+
+//   let addr_family : Address_Family? = from_Number(from: from.ai_family)
+
+//   if addr_family == .ipv4 {
+//     let mi_addr_sockaddr_in = mi_raw_addr.load(as: sockaddr_in.self)
+//     var mi_sinaddr = mi_addr_sockaddr_in.sin_addr
+
+//     if inet_ntop (AF_INET, &mi_sinaddr, &mi_buffer_array, socklen_t (INET_ADDRSTRLEN)) == nil {
+//       return [0]
+//     }
+//   }
+
+//   if addr_family == .ipv6 {
+//     let mi_addr_sockaddr_in6 = mi_raw_addr.load(as: sockaddr_in6.self)
+//     var mi_sinaddr6 = mi_addr_sockaddr_in6.sin6_addr
+
+//     if inet_ntop (AF_INET6, &mi_sinaddr6, &mi_buffer_array, socklen_t (INET6_ADDRSTRLEN)) == nil {
+//       return [0]
+//     }
+//   }
+
+//   // mi_raw_addr.deallocate()
+
+//   return mi_buffer_array
+// }
 
 public func close (sock: inout Socket_Dulce) -> Void {
   if !is_Initialized(sock: sock){
