@@ -414,6 +414,8 @@ public func address_String (from: Address) -> [CChar] {
   let addr_family : Address_Family? = from_Number(from: from.ai_family)
 
   print(MemoryLayout<sockaddr>.stride, " ", MemoryLayout<sockaddr>.alignment)
+  print(MemoryLayout<sockaddr_in>.stride, " ", MemoryLayout<sockaddr_in>.alignment)
+  print(MemoryLayout<sockaddr_in6>.stride, " ", MemoryLayout<sockaddr_in6>.alignment)
 
 
   if addr_family == nil {
