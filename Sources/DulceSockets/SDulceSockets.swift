@@ -409,8 +409,8 @@ public func address_String (from: Address) -> [UInt8] {
 
   var mi_buffer_array: [UInt8] = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN) + 1)
 
-  var mi_sockin : sockaddr_in?  = nil
-  var mi_sockin6 : sockaddr_in6? = nil
+  var mi_addr_tmp : Any? = nil
+  var mi_family_tmp : Any? = nil
 
   let addr_family : Address_Family? = from_Number(from: from.ai_family)
 
@@ -423,9 +423,14 @@ public func address_String (from: Address) -> [UInt8] {
     mi_raw_addr.deallocate()
   }
 
-
   if addr_family == nil {
     return [0]
+  }
+
+  if addr_family == .ipv4 {
+    let miipv4 = mi_raw_addr.load(as: sockaddr_in.self)
+    mi_addr_tmp = miipv4.sin_addr
+    mi_family_tmp = miipv4.sin_family
   }
 
   return mi_buffer_array
