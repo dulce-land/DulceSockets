@@ -413,14 +413,9 @@ public func address_String (from: Address) -> String {
 
   inet_ntop (Int32 (mi_sockaddr.sa_family), &mi_sockaddr, &addr, socklen_t (addr.count))
 
-  // let fir = addr.firstIndex(of: 0)
+  let str = String(decoding: addr, as: UTF8.self)
 
-  // if fir == nil {
-
-    return String(decoding: addr , as: UTF8.self)
-  // }
-  // return String(decoding: addr[addr.startIndex ..< fir!] , as: UTF8.self)
-
+  return str
 }
 
 public func close (sock: inout Socket_Dulce) -> Void {
