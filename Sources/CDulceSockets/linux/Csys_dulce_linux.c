@@ -2,8 +2,6 @@
 
 #include "Csys_dulce_linux.h"
 
-// #include <stdio.h>
-// #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
 #include <errno.h>

@@ -22,15 +22,3 @@ void c_show_error(
     int *len);
 
 void c_reuse_address(Dulce_Socket_Descriptor fd);
-
-struct sockaddr_in c_to_ipv4_address(const struct sockaddr *from);
-
-struct sockaddr_in6 c_to_ipv6_address(const struct sockaddr *from);
-
-struct sockaddr_storage c_to_ipany_address(const struct sockaddr *from);
-
-struct sockaddr c_from_ipv4_address(const struct sockaddr_in *from);
-
-struct sockaddr c_from_ipv6_address(const struct sockaddr_in6 *from);
-
-struct sockaddr c_from_ipany_address(const struct sockaddr_storage *from);
