@@ -138,9 +138,7 @@ public func create_Address (host: String, port: String, address_family: Address_
     return nil
   }
 
-  var mi_address = Addresses ()
-  mi_address.addr_typ = address_type
-  mi_address.addr_arr = []
+  var mi_address = Addresses (addr_typ: address_type, addr_arr: [])
 
   var mi_servinfo = servinfo
 
@@ -155,6 +153,8 @@ public func create_Address (host: String, port: String, address_family: Address_
     mi_address2.ai_addr = mi_servinfo!.pointee.ai_addr.pointee
 
     mi_address.addr_arr.append (mi_address2)
+
+    mi_address2.ai_addr = nil
 
     mi_servinfo = mi_servinfo!.pointee.ai_next
 
@@ -396,9 +396,7 @@ public func port_Number (from: Address) -> UInt16 {
     let mi_addr_sockaddr_in = mi_raw_addr.load(as: sockaddr_in.self)
     mi_port = ntohs(mi_addr_sockaddr_in.sin_port)
 
-  }
-
-  if addr_family == .ipv6 {
+  } else if addr_family == .ipv6 {
 
     let mi_raw_addr =
       UnsafeMutableRawPointer.allocate(byteCount: Int (from.ai_addrlen),
@@ -422,7 +420,7 @@ public func port_String (from: Address) -> String {
   return String(port_Number(from: from))
 }
 
-public func address_String (from: Address) -> [CChar] {
+public func address_String (from: Address) -> String {
 
   var mi_buffer_array  = [CChar](repeating: 0, count: Int (INET6_ADDRSTRLEN + 1))
 
@@ -431,7 +429,7 @@ public func address_String (from: Address) -> [CChar] {
   let addr_family : Address_Family? = from_Number(from: from.ai_family)
 
   if addr_family == nil {
-    return [0]
+    return "0"
   }
 
   if addr_family == .ipv4 {
@@ -470,11 +468,10 @@ public func address_String (from: Address) -> [CChar] {
     _ = inet_ntop(PF_INET6, &mi_sinaddr, // htonl ?
           &mi_buffer_array[mi_buffer_array.startIndex], socklen_t (INET6_ADDRSTRLEN))
 
-  } else {
-    return [90,15]
   }
 
-  return mi_buffer_array
+  return String.init(cString: mi_buffer_array, encoding: String.Encoding.ascii)!
+
 }
 
 //   var mi_buffer_array: [UInt8] = [UInt8](repeating: 0, count: Int (INET6_ADDRSTRLEN))
