@@ -2,13 +2,14 @@
 // https://docs.swift.org/swift-book
 
 import CDulceSockets
+import Foundation
 
 public struct Address {
   var ai_family : Int32 = 0   // AF_XXX
   var ai_socktype : Int32 = 0 // sock_XXX
   var ai_protocol : Int32 = 0 // 0 (auto) || IPPROTO_TCP || IPPROTO_UDP
   var ai_addrlen  : UInt32 = 0
-  var ai_addr : sockaddr = sockaddr(sa_family: 0, sa_data: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+  var ai_addr : sockaddr_storage = sockaddr_storage()
 }
 
 public enum Address_Family {
@@ -154,7 +155,9 @@ public func create_Address (host: String, port: String, address_family: Address_
     mi_address2.ai_socktype = mi_servinfo!.pointee.ai_socktype
     mi_address2.ai_protocol = mi_servinfo!.pointee.ai_protocol
     mi_address2.ai_addrlen  = mi_servinfo!.pointee.ai_addrlen
-    mi_address2.ai_addr     = mi_servinfo!.pointee.ai_addr.pointee
+
+    _ = memset (&mi_address2.ai_addr, 0, MemoryLayout<sockaddr_storage>.stride)
+    _ = memcpy (&mi_address2.ai_addr, &mi_servinfo!.pointee.ai_addr, Int(mi_servinfo!.pointee.ai_addrlen))
 
     mi_address.addr_arr.append (mi_address2)
 
@@ -199,8 +202,9 @@ public func create_Socket (from_address: Addresses, need_bind: Bool = false, nee
 
     if need_bind {
       c_reuse_address(mi_socket.sock)
+      let mi_bind = C_Socket_Error
 
-      let mi_bind = bind (mi_socket.sock, &mi_address.ai_addr, mi_address.ai_addrlen)
+      // let mi_bind = bind (mi_socket.sock, &mi_address.ai_addr, mi_address.ai_addrlen)
 
       if mi_bind == C_Socket_Error {
         mi_socket.sock = 0
@@ -303,7 +307,7 @@ public func wait_Connection (
     mi_address.ai_socktype = to_Number(from: sock.addr.addr_typ)
     mi_address.ai_protocol = sock.addr.addr_arr[sock.addr.addr_arr.startIndex].ai_protocol
     mi_address.ai_addrlen = stor_len
-    mi_address.ai_addr = stor_addr
+    // mi_address.ai_addr = stor_addr
 
 
     let tmp_socket = Socket_Dulce (sock: mi_sock, addr: Addresses(addr_typ: sock.addr.addr_typ, addr_arr: [mi_address]),
@@ -334,7 +338,7 @@ public func wait_Connection (
     mi_address.ai_socktype = to_Number(from: sock.addr.addr_typ)
     mi_address.ai_protocol = sock.addr.addr_arr[sock.addr.addr_arr.startIndex].ai_protocol
     mi_address.ai_addrlen = stor_len
-    mi_address.ai_addr = stor_addr
+    // mi_address.ai_addr = stor_addr
 
     let mi_addr2 : Addresses = Addresses(addr_typ: .udp, addr_arr: [mi_address])
 
@@ -369,8 +373,9 @@ public func dulce_Connect (
     return true
   }
 
-  return C_Socket_Error != connect(sock.sock, &sock.addr.addr_arr[sock.addr.addr_arr.startIndex].ai_addr,
-    sock.addr.addr_arr[sock.addr.addr_arr.startIndex].ai_addrlen)
+  return false //tbr
+  // return C_Socket_Error != connect(sock.sock, &sock.addr.addr_arr[sock.addr.addr_arr.startIndex].ai_addr,
+  //   sock.addr.addr_arr[sock.addr.addr_arr.startIndex].ai_addrlen)
 }
 
 public func port_Number (from: Address) -> UInt16 {
@@ -379,10 +384,10 @@ public func port_Number (from: Address) -> UInt16 {
 
   var mi_port : UInt16 = 0
 
-  let mi_raw_addr = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<sockaddr>.stride,
-    alignment: MemoryLayout<sockaddr>.alignment)
+  let mi_raw_addr = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<sockaddr_storage>.stride,
+    alignment: MemoryLayout<sockaddr_storage>.alignment)
 
-  mi_raw_addr.storeBytes(of: from.ai_addr, as: sockaddr.self)
+  mi_raw_addr.storeBytes(of: from.ai_addr, as: sockaddr_storage.self)
 
   defer {
     mi_raw_addr.deallocate()
@@ -409,20 +414,36 @@ public func address_String (from: Address) -> [CChar] {
 
   var mi_buffer_array  = [CChar](repeating: 0, count: Int (INET6_ADDRSTRLEN) + 1)
 
-  var misoa = from.ai_addr;
+  let misoa = from.ai_addr;
 
   let addr_family : Address_Family? = from_Number(from: from.ai_family)
 
-  print(MemoryLayout<sockaddr>.stride, " ", MemoryLayout<sockaddr>.alignment)
-  print(MemoryLayout<sockaddr_in>.stride, " ", MemoryLayout<sockaddr_in>.alignment)
-  print(MemoryLayout<sockaddr_in6>.stride, " ", MemoryLayout<sockaddr_in6>.alignment)
-  print(MemoryLayout<sockaddr_storage>.stride, " ", MemoryLayout<sockaddr_storage>.alignment)
+  let mi_raw_addr = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<sockaddr_storage>.stride,
+    alignment: MemoryLayout<sockaddr_storage>.alignment)
 
+  mi_raw_addr.storeBytes(of: misoa, as: sockaddr_storage.self)
+
+  defer {
+    mi_raw_addr.deallocate()
+  }
 
   if addr_family == nil {
     return [0]
   }
 
+  if addr_family == .ipv4 {
+    let mi_addr_sockaddr_in = mi_raw_addr.load(as: sockaddr_in.self)
+    var mi_sinaddr = mi_addr_sockaddr_in.sin_addr
+    _ = inet_ntop(Int32 (mi_addr_sockaddr_in.sin_family), &mi_sinaddr,
+          &mi_buffer_array, socklen_t (mi_buffer_array.count))
+  }
+
+  if addr_family == .ipv6 {
+    let mi_addr_sockaddr_in6 = mi_raw_addr.load(as: sockaddr_in6.self)
+    var mi_sinaddr = mi_addr_sockaddr_in6.sin6_addr
+    _ = inet_ntop(Int32 (mi_addr_sockaddr_in6.sin6_family), &mi_sinaddr,
+          &mi_buffer_array, socklen_t (mi_buffer_array.count))
+  }
 
   return mi_buffer_array
 }
@@ -528,11 +549,11 @@ public func send (
 
     }
 
-    if sock.addr.addr_typ == .udp {
-      sended_length = sendto(sock.sock, &data_to_send[pos], remaining, 0,
-        &sock.addr.addr_arr[sock.addr.addr_arr.startIndex].ai_addr,
-        sock.addr.addr_arr[sock.addr.addr_arr.startIndex].ai_addrlen)
-    }
+    // if sock.addr.addr_typ == .udp {
+    //   sended_length = sendto(sock.sock, &data_to_send[pos], remaining, 0,
+    //     &sock.addr.addr_arr[sock.addr.addr_arr.startIndex].ai_addr,
+    //     sock.addr.addr_arr[sock.addr.addr_arr.startIndex].ai_addrlen)
+    // }
 
     if sended_length < 1 || sended_length == C_Socket_Error {
       break
@@ -615,7 +636,7 @@ public func receive (
   var mi_udp_addresses = Addresses(addr_typ: .udp, addr_arr: [])
 
   var mi_address = sock.addr.addr_arr[sock.addr.addr_arr.startIndex]
-  mi_address.ai_addr = sockaddr()
+  // mi_address.ai_addr = sockaddr()
 
   var mi_udp_sockaddr = sockaddr ()
   var mi_udp_sockaddr_len = socklen_t (MemoryLayout<sockaddr>.stride)
@@ -631,7 +652,7 @@ public func receive (
       receive_length = recvfrom(sock.sock, &mi_arr[mi_arr.startIndex], mi_arr.count, 0,
        &mi_udp_sockaddr, &mi_udp_sockaddr_len)
 
-      mi_address.ai_addr = mi_udp_sockaddr
+      // mi_address.ai_addr = mi_udp_sockaddr
       mi_address.ai_addrlen = mi_udp_sockaddr_len
 
       mi_udp_sockaddr = sockaddr()
