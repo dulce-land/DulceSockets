@@ -9,7 +9,7 @@ public struct Address {
   var ai_socktype : Int32 = 0 // sock_XXX
   var ai_protocol : Int32 = 0 // 0 (auto) || IPPROTO_TCP || IPPROTO_UDP
   var ai_addrlen  : UInt32 = 0
-  var ai_addr : sockaddr_storage = sockaddr_storage()
+  var ai_addr : sockaddr = sockaddr()
 }
 
 public enum Address_Family {
@@ -155,9 +155,7 @@ public func create_Address (host: String, port: String, address_family: Address_
     mi_address2.ai_socktype = mi_servinfo!.pointee.ai_socktype
     mi_address2.ai_protocol = mi_servinfo!.pointee.ai_protocol
     mi_address2.ai_addrlen  = mi_servinfo!.pointee.ai_addrlen
-
-    _ = memset (&mi_address2.ai_addr, 0, MemoryLayout<sockaddr_storage>.stride)
-    _ = memcpy (&mi_address2.ai_addr, &mi_servinfo!.pointee.ai_addr, Int(mi_servinfo!.pointee.ai_addrlen))
+    mi_address2.ai_addr = mi_servinfo!.pointee.ai_addr.pointee
 
     mi_address.addr_arr.append (mi_address2)
 
@@ -186,7 +184,7 @@ public func create_Socket (from_address: Addresses, need_bind: Bool = false, nee
   var OK : Bool = false
 
   loop1_label:
-  for var mi_address in from_address.addr_arr {
+  for mi_address in from_address.addr_arr {
 
     mi_socket.sock = socket(mi_address.ai_family, mi_address.ai_socktype, mi_address.ai_protocol)
 
@@ -382,26 +380,38 @@ public func port_Number (from: Address) -> UInt16 {
 
   let addr_family : Address_Family? = from_Number(from: from.ai_family)
 
+  let misoa = from.ai_addr
+
   var mi_port : UInt16 = 0
 
-  let mi_raw_addr = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<sockaddr_storage>.stride,
-    alignment: MemoryLayout<sockaddr_storage>.alignment)
+  if addr_family == .ipv4 {
 
-  mi_raw_addr.storeBytes(of: from.ai_addr, as: sockaddr_storage.self)
+    let mi_raw_addr =
+      UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<sockaddr_in>.stride,
+      alignment: MemoryLayout<sockaddr_in>.alignment)
 
-  defer {
+    mi_raw_addr.storeBytes(of: misoa, as: sockaddr.self)
+
+    let mi_addr_sockaddr_in = mi_raw_addr.load(as: sockaddr_in.self)
+    mi_port = ntohs(mi_addr_sockaddr_in.sin_port)
+
     mi_raw_addr.deallocate()
   }
 
-  if addr_family == .ipv4 {
-    let mi_addr_sockaddr_in = mi_raw_addr.load(as: sockaddr_in.self)
-    mi_port = ntohs(mi_addr_sockaddr_in.sin_port)
-  }
-
   if addr_family == .ipv6 {
+
+    let mi_raw_addr =
+      UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<sockaddr_in6>.stride,
+      alignment: MemoryLayout<sockaddr_in6>.alignment)
+
+    mi_raw_addr.storeBytes(of: misoa, as: sockaddr.self)
+
     let mi_addr_sockaddr_in6 = mi_raw_addr.load(as: sockaddr_in6.self)
     mi_port = ntohs(mi_addr_sockaddr_in6.sin6_port)
+
+    mi_raw_addr.deallocate()
   }
+
 
   return mi_port
 }
@@ -418,31 +428,45 @@ public func address_String (from: Address) -> [CChar] {
 
   let addr_family : Address_Family? = from_Number(from: from.ai_family)
 
-  let mi_raw_addr = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<sockaddr_storage>.stride,
-    alignment: MemoryLayout<sockaddr_storage>.alignment)
 
-  mi_raw_addr.storeBytes(of: misoa, as: sockaddr_storage.self)
-
-  defer {
-    mi_raw_addr.deallocate()
-  }
+  // defer {
+  //   mi_raw_addr.deallocate()
+  // }
 
   if addr_family == nil {
     return [0]
   }
 
   if addr_family == .ipv4 {
-    let mi_addr_sockaddr_in = mi_raw_addr.load(as: sockaddr_in.self)
-    var mi_sinaddr = mi_addr_sockaddr_in.sin_addr
-    _ = inet_ntop(Int32 (mi_addr_sockaddr_in.sin_family), &mi_sinaddr,
+
+    let mi_raw_addr = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<sockaddr_in>.stride,
+      alignment: MemoryLayout<sockaddr_in>.alignment)
+
+    mi_raw_addr.storeBytes(of: misoa, as: sockaddr.self)
+
+    let mi_sock_in = mi_raw_addr.load(as: sockaddr_in.self)
+    var mi_sinaddr = mi_sock_in.sin_addr
+
+    _ = inet_ntop(Int32 (mi_sock_in.sin_family), &mi_sinaddr,
           &mi_buffer_array, socklen_t (mi_buffer_array.count))
+
+    mi_raw_addr.deallocate()
   }
 
   if addr_family == .ipv6 {
-    let mi_addr_sockaddr_in6 = mi_raw_addr.load(as: sockaddr_in6.self)
-    var mi_sinaddr = mi_addr_sockaddr_in6.sin6_addr
-    _ = inet_ntop(Int32 (mi_addr_sockaddr_in6.sin6_family), &mi_sinaddr,
+
+    let mi_raw_addr = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<sockaddr_in6>.stride,
+      alignment: MemoryLayout<sockaddr_in6>.alignment)
+
+    mi_raw_addr.storeBytes(of: misoa, as: sockaddr.self)
+
+    let mi_sock_in = mi_raw_addr.load(as: sockaddr_in6.self)
+    var mi_sinaddr = mi_sock_in.sin6_addr
+
+    _ = inet_ntop(Int32 (mi_sock_in.sin6_family), &mi_sinaddr,
           &mi_buffer_array, socklen_t (mi_buffer_array.count))
+
+    mi_raw_addr.deallocate()
   }
 
   return mi_buffer_array
