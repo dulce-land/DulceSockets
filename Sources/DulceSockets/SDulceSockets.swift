@@ -416,6 +416,7 @@ public func address_String (from: Address) -> [CChar] {
   print(MemoryLayout<sockaddr>.stride, " ", MemoryLayout<sockaddr>.alignment)
   print(MemoryLayout<sockaddr_in>.stride, " ", MemoryLayout<sockaddr_in>.alignment)
   print(MemoryLayout<sockaddr_in6>.stride, " ", MemoryLayout<sockaddr_in6>.alignment)
+  print(MemoryLayout<sockaddr_storage>.stride, " ", MemoryLayout<sockaddr_storage>.alignment)
 
 
   if addr_family == nil {
