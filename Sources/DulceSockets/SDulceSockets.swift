@@ -5,11 +5,11 @@ import CDulceSockets
 import Foundation
 
 public struct Address {
-  var ai_family : Int32 = 0   // AF_XXX
-  var ai_socktype : Int32 = 0 // sock_XXX
-  var ai_protocol : Int32 = 0 // 0 (auto) || IPPROTO_TCP || IPPROTO_UDP
-  var ai_addrlen  : UInt32 = 0
-  var ai_addr : sockaddr?
+  public internal(set) var ai_family : Int32 = 0   // AF_XXX
+  public internal(set) var ai_socktype : Int32 = 0 // sock_XXX
+  public internal(set) var ai_protocol : Int32 = 0 // 0 (auto) || IPPROTO_TCP || IPPROTO_UDP
+  public internal(set) var ai_addrlen  : UInt32 = 0
+  public internal(set) var ai_addr : sockaddr?
 }
 
 public enum Address_Family {
@@ -48,8 +48,8 @@ public struct Addresses {
 }
 
 public struct Socket_Dulce {
-  var sock : Dulce_Socket_Descriptor = 0
-  var addr : Addresses  = Addresses()
+  public internal(set) var sock : Dulce_Socket_Descriptor = 0
+  public internal(set) var addr : Addresses  = Addresses()
   var binded    : Bool  = false
   var connected : Bool  = false
   var listened  : Bool  = false
