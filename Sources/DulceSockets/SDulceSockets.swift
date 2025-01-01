@@ -67,6 +67,10 @@ public func is_Listened (sock: Socket_Dulce) -> Bool {
   return sock.listened
 }
 
+public func is_Connected (sock: Socket_Dulce) -> Bool {
+  return sock.connected
+}
+
 
 public func to_Number (from: Address_Family) -> Int32 {
   let mi_family  = switch from {
@@ -78,33 +82,30 @@ public func to_Number (from: Address_Family) -> Int32 {
 }
 
 public func to_Number (from: Address_Type) -> Int32? {
-  let mi_address_type: Int32?  = switch from {
+  return switch from {
     case .tcp: c_sock_stream
     case .udp: c_sock_dgram
     default: nil
   }
-  return mi_address_type
 }
 
 
 public func from_Number (from: Int32) -> Address_Family? {
-  let mi_family : Address_Family? = switch from {
+  return switch from {
     case AF_UNSPEC: .ipany
     case AF_INET6:  .ipv6
     case AF_INET:   .ipv4
     default: nil
   }
-  return mi_family
 }
 
 public func from_Number (from: Int32) -> Address_Type? {
-  let mi_address_type : Address_Type? = switch from {
+  return switch from {
     case c_sock_stream: .tcp
     case c_sock_dgram:  .udp
 
     default: nil
   }
-  return mi_address_type
 }
 
 public func create_Addresses
@@ -257,31 +258,34 @@ public func wait_Connection (
   response: inout Socket_Dulce?,
   data_received: inout [UInt8],
   miliseconds_start_timeout: UInt32 = 0
-) -> Bool {
+) -> Bool? {
 
   response = nil
   data_received = []
 
   if !(is_Initialized(sock: sock) && is_Binded(sock: sock) && is_Listened(sock: sock)){
-    return false
+    return nil
   }
 
   if miliseconds_start_timeout > 0 {
     var mi_wait_poll = Poll_Of_Events ()
 
     if !set_Receive(mi_poll: &mi_wait_poll, sock: sock){
-      return false
+      return nil
     }
 
     if !(poll_Wait(mi_poll: &mi_wait_poll, miliseconds_timeout: Int32 (miliseconds_start_timeout)) &&
       is_Receive(mi_poll: mi_wait_poll, sock: sock)){
 
         close(mi_poll: &mi_wait_poll)
-        return false
+        return nil
     }
 
     close(mi_poll: &mi_wait_poll)
   }
+
+  var mi_address = Address()
+  let start_indx = sock.addr.addr_arr.startIndex
 
   var stor_addr: sockaddr = sockaddr()
   var stor_len: socklen_t = socklen_t (MemoryLayout<sockaddr>.size)
@@ -291,14 +295,12 @@ public func wait_Connection (
     let mi_sock: Dulce_Socket_Descriptor = accept(sock.sock, &stor_addr , &stor_len)
 
     if mi_sock == C_Socket_Invalid {
-      return false
+      return nil
     }
-
-    var mi_address = Address()
 
     mi_address.ai_family = Int32 (stor_addr.sa_family)
     mi_address.ai_socktype = to_Number(from: .tcp)!
-    mi_address.ai_protocol = sock.addr.addr_arr[sock.addr.addr_arr.startIndex].ai_protocol
+    mi_address.ai_protocol = sock.addr.addr_arr[start_indx].ai_protocol
     mi_address.ai_addrlen = stor_len
     mi_address.ai_addr = stor_addr
 
@@ -306,7 +308,7 @@ public func wait_Connection (
     let tmp_socket = Socket_Dulce (sock: mi_sock,
       addr: Addresses(addr_typ: .tcp, addr_arr: [mi_address]),
       binded: false,
-      connected: false,
+      connected: true,
       listened: false)
 
     response = tmp_socket
@@ -322,14 +324,12 @@ public func wait_Connection (
       &stor_addr, &stor_len)
 
     if mi_len == C_Socket_Error || mi_len < 1 {
-      return false
+      return nil
     }
-
-    var mi_address = Address()
 
     mi_address.ai_family = Int32 (stor_addr.sa_family)
     mi_address.ai_socktype = to_Number(from: .udp)!
-    mi_address.ai_protocol = sock.addr.addr_arr[sock.addr.addr_arr.startIndex].ai_protocol
+    mi_address.ai_protocol = sock.addr.addr_arr[start_indx].ai_protocol
     mi_address.ai_addrlen = stor_len
     mi_address.ai_addr = stor_addr
 
@@ -342,7 +342,7 @@ public func wait_Connection (
     return response != nil
   }
 
-  return false
+  return false // non .tcp or non .udp
 }
 
 public func string_Error() -> String {
@@ -357,9 +357,11 @@ public func string_Error() -> String {
 
 public func dulce_Connect (
   sock: inout Socket_Dulce
-) -> Bool {
-  if !(is_Initialized(sock: sock) && sock.addr.addr_arr.count > 0){
-    return false
+) -> Bool? {
+  if !is_Initialized(sock: sock) || is_Connected(sock: sock) || is_Listened(sock: sock) ||
+    is_Binded(sock: sock) || sock.addr.addr_arr.count < 1
+  {
+    return nil
   }
 
   if sock.addr.addr_typ == .udp {
@@ -367,15 +369,21 @@ public func dulce_Connect (
     return true
   }
 
-  return C_Socket_Error != connect(sock.sock, &sock.addr.addr_arr[sock.addr.addr_arr.startIndex].ai_addr!,
-    sock.addr.addr_arr[sock.addr.addr_arr.startIndex].ai_addrlen)
+  let fia = sock.addr.addr_arr.startIndex
+
+  return C_Socket_Error != connect(sock.sock, &sock.addr.addr_arr[fia].ai_addr!,
+    sock.addr.addr_arr[fia].ai_addrlen)
 }
 
 public func port_Number (from: Address) -> UInt16? {
 
+  if from.ai_addr == nil {
+    return nil
+  }
+
   let addr_family : Address_Family? = from_Number(from: from.ai_family)
 
-  if addr_family == nil || from.ai_addr == nil {
+  if addr_family == nil {
     return nil
   }
 
@@ -419,7 +427,12 @@ public func port_Number (from: Address) -> UInt16? {
 }
 
 public func port_String (from: Address) -> String? {
+  if from.ai_addr == nil {
+    return nil
+  }
+
   let mi_answer = port_Number(from: from)
+
   if mi_answer == nil {
     return nil
   }
@@ -435,6 +448,7 @@ public func address_String (from: Address) -> String? {
   }
 
   var mi_buffer_array  = [CChar](repeating: 0, count: Int (INET6_ADDRSTRLEN + 1))
+  let mibuari = mi_buffer_array.startIndex
 
   let misoa = from.ai_addr;
 
@@ -454,7 +468,7 @@ public func address_String (from: Address) -> String? {
     var mi_sinaddr = mi_sock_in.sin_addr
 
     _ = inet_ntop(PF_INET, &mi_sinaddr,
-          &mi_buffer_array[mi_buffer_array.startIndex], socklen_t (INET6_ADDRSTRLEN))
+          &mi_buffer_array[mibuari], socklen_t (INET6_ADDRSTRLEN))
 
   } else if addr_family == .ipv6 {
 
@@ -472,7 +486,7 @@ public func address_String (from: Address) -> String? {
     var mi_sinaddr = mi_sock_in.sin6_addr
 
     _ = inet_ntop(PF_INET6, &mi_sinaddr,
-          &mi_buffer_array[mi_buffer_array.startIndex], socklen_t (INET6_ADDRSTRLEN))
+          &mi_buffer_array[mibuari], socklen_t (INET6_ADDRSTRLEN))
 
   }
 
@@ -503,7 +517,7 @@ public func close (sock: inout Socket_Dulce) -> Void {
 
 
 public func send (
-  sock: inout Socket_Dulce,
+  sock: Socket_Dulce,
   data_to_send: inout [UInt8],
   send_count: inout Int,
   miliseconds_start_timeout: UInt32 = 0, // default is wait forever
@@ -540,6 +554,7 @@ public func send (
   var remaining = data_to_send.count
   var sended_length = 0
   var total_sended = 0
+  var addrlo = sock.addr.addr_arr[mi_start_addr].ai_addr!
 
   while true {
     if sock.addr.addr_typ == .tcp {
@@ -549,8 +564,7 @@ public func send (
 
     if sock.addr.addr_typ == .udp {
       sended_length = sendto(sock.sock, &data_to_send[pos], remaining, 0,
-        &sock.addr.addr_arr[mi_start_addr].ai_addr!,
-        sock.addr.addr_arr[mi_start_addr].ai_addrlen)
+        &addrlo, sock.addr.addr_arr[mi_start_addr].ai_addrlen)
     }
 
     if sended_length < 1 || sended_length == C_Socket_Error {
@@ -604,7 +618,8 @@ public func receive (
   received_count = 0
   udp_received_addresses = nil
 
-  if !(is_Initialized(sock: sock) && (sock.addr.addr_typ == .udp || sock.addr.addr_typ == .tcp)) {
+  if !(is_Initialized(sock: sock) && (sock.addr.addr_typ == .udp || sock.addr.addr_typ == .tcp))
+  {
     return nil
   }
 
@@ -654,7 +669,7 @@ public func receive (
       mi_address.ai_addrlen = mi_udp_sockaddr_len
 
       mi_udp_sockaddr = sockaddr()
-      mi_udp_sockaddr_len = socklen_t (MemoryLayout<sockaddr>.stride)
+      mi_udp_sockaddr_len = socklen_t (MemoryLayout<sockaddr>.size)
 
       mi_udp_addresses.addr_arr.append(mi_address)
 
