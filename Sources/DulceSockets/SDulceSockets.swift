@@ -55,6 +55,7 @@ public struct Socket_Dulce {
   var listened  : Bool  = false
 
   public init() {}
+
   public init(sock: Dulce_Socket_Descriptor, addr: Addresses, binded: Bool = false, connected: Bool = false, listened: Bool = false) {
     self.sock = sock
     self.addr = addr
