@@ -133,8 +133,8 @@ public func create_Addresses
   var servinfo: UnsafeMutablePointer<addrinfo>? = nil
 
   if 0 != getaddrinfo(
-    host,
-    port,                 // The port on which will be listenend
+    (host == "" ? nil : host),
+    (port == "" ? "0" : port),                 // The port on which will be listenend
     &hints,               // Protocol configuration as per above
     &servinfo)
   {
