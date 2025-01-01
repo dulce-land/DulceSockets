@@ -53,6 +53,16 @@ public struct Socket_Dulce {
   var binded    : Bool  = false
   var connected : Bool  = false
   var listened  : Bool  = false
+
+  public init() {}
+  public init(sock: Dulce_Socket_Descriptor, addr: Addresses, binded: Bool = false, connected: Bool = false, listened: Bool = false) {
+    self.sock = sock
+    self.addr = addr
+    self.binded = binded
+    self.connected = connected
+    self.listened = listened
+
+  }
 }
 
 public func is_Initialized (sock: Socket_Dulce) -> Bool {
