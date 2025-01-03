@@ -386,13 +386,12 @@ public func wait_Connection (
 }
 
 public func string_Error() -> String {
-  var message_a = [UInt8](repeating: 0, count: 260)
+  var message_a = [CChar](repeating: 0, count: 260)
   var length_a  = Int32 (message_a.count - 1)
 
   c_show_error(&message_a, &length_a)
 
-  return String(decoding: message_a[message_a.startIndex ..< message_a.startIndex + Int(length_a)] , as: UTF8.self)
-
+  return String.init(cString: [CChar](message_a[message_a.startIndex ..< message_a.startIndex + Int(length_a)]), encoding: String.Encoding.ascii)!
 }
 
 public func dulce_Connect (
