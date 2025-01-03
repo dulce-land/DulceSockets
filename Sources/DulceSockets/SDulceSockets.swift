@@ -391,7 +391,7 @@ public func string_Error() -> String {
 
   c_show_error(&message_a, &length_a)
 
-  return String.init(cString: [CChar](message_a[message_a.startIndex ..< message_a.startIndex + Int(length_a)]), encoding: String.Encoding.ascii)!
+  return String.init(cString: [CChar](message_a[message_a.startIndex ... message_a.startIndex + Int(length_a)]), encoding: String.Encoding.ascii)!
 }
 
 public func dulce_Connect (
