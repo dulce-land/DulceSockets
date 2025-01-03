@@ -91,7 +91,7 @@ public func is_Empty (addr: Addresses) -> Bool {
 }
 
 
-public func to_Number (from: Address_Family) -> Int32 {
+public func to_Family_Number (from: Address_Family) -> Int32 {
   return switch from {
     case .ipany: AF_UNSPEC
     case .ipv6: AF_INET6
@@ -99,7 +99,7 @@ public func to_Number (from: Address_Family) -> Int32 {
   }
 }
 
-public func to_Number (from: Address_Type) -> Int32? {
+public func to_Type_Number (from: Address_Type) -> Int32? {
   return switch from {
     case .tcp: c_sock_stream
     case .udp: c_sock_dgram
@@ -108,7 +108,7 @@ public func to_Number (from: Address_Type) -> Int32? {
 }
 
 
-public func from_Number (from: Int32) -> Address_Family? {
+public func from_Family_Number (from: Int32) -> Address_Family? {
   return switch from {
     case AF_UNSPEC: .ipany
     case AF_INET6:  .ipv6
@@ -117,7 +117,7 @@ public func from_Number (from: Int32) -> Address_Family? {
   }
 }
 
-public func from_Number (from: Int32) -> Address_Type? {
+public func from_Type_Number (from: Int32) -> Address_Type? {
   return switch from {
     case c_sock_stream: .tcp
     case c_sock_dgram:  .udp
@@ -143,8 +143,8 @@ public func create_Addresses
   var hints = addrinfo()
 
   hints.ai_flags = AI_PASSIVE
-  hints.ai_family = to_Number(from: address_family)
-  hints.ai_socktype = to_Number(from: address_type)!
+  hints.ai_family = to_Family_Number(from: address_family)
+  hints.ai_socktype = to_Type_Number(from: address_type)!
   hints.ai_protocol = 0
   hints.ai_addrlen  = 0
   hints.ai_canonname = nil // position change in os's
@@ -339,7 +339,7 @@ public func wait_Connection (
     }
 
     mi_address.ai_family = Int32 (stor_addr.sa_family)
-    mi_address.ai_socktype = to_Number(from: .tcp)!
+    mi_address.ai_socktype = to_Type_Number(from: .tcp)!
     mi_address.ai_protocol = sock.addr.addr_arr[start_indx].ai_protocol
     mi_address.ai_addrlen = stor_len
     mi_address.ai_addr = stor_addr
@@ -368,7 +368,7 @@ public func wait_Connection (
     }
 
     mi_address.ai_family = Int32 (stor_addr.sa_family)
-    mi_address.ai_socktype = to_Number(from: .udp)!
+    mi_address.ai_socktype = to_Type_Number(from: .udp)!
     mi_address.ai_protocol = sock.addr.addr_arr[start_indx].ai_protocol
     mi_address.ai_addrlen = stor_len
     mi_address.ai_addr = stor_addr
@@ -417,7 +417,7 @@ public func dulce_Connect (
 
 public func port_Number (from: Address) -> UInt16? {
 
-  let addr_family : Address_Family? = from_Number(from: from.ai_family)
+  let addr_family : Address_Family? = from_Family_Number(from: from.ai_family)
 
   if addr_family == nil {
     return nil
@@ -474,7 +474,7 @@ public func port_String (from: Address) -> String {
 
 public func address_String (from: Address) -> String {
 
-  let addr_family : Address_Family? = from_Number(from: from.ai_family)
+  let addr_family : Address_Family? = from_Family_Number(from: from.ai_family)
 
   if addr_family == nil {
     return "unknown"
